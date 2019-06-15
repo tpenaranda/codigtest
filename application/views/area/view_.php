@@ -192,26 +192,24 @@
 
     $.ajax({
       type: 'GET',
-      dataType : "json",
+      dataType: 'json',
       url: '/index.php/area/Listado_areas',
-      success: function(results) {
-        $('#areas-table > tbody').removeClass('text-center').html('');
-        $.each(results, function(index, value) {
-          $('#areas-table > tbody:last-child').append(`
-              <tr>
-                <td class="text-center">
-                  <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar"></i>
-                  <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" ></i>
-                </td>
-                <td class="text-center">${value.id_area}</td>
-                <td class="text-capitalize">${value.descripcion}</td>
-              </tr>`);
-        });
-        makeDataTable();
-      },
-      error: function(result){
-        $('tbody').html('<tr><td colspan="3">Error cargando áreas!</td></tr>');
-      }
+    }).done((results) => {
+      $('#areas-table > tbody').removeClass('text-center').html('');
+      $.each(results, function(index, value) {
+        $('#areas-table > tbody').append(`
+            <tr>
+              <td class="text-center">
+                <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar"></i>
+                <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" ></i>
+              </td>
+              <td class="text-center">${value.id_area}</td>
+              <td class="text-capitalize">${value.descripcion}</td>
+            </tr>`);
+      });
+      //makeDataTable();
+    }).fail(() => {
+      $('tbody').html('<tr><td colspan="3">Error cargando áreas!</td></tr>');
     });
   }
 
@@ -221,7 +219,7 @@
         event.target.result.transaction('ajax_requests').objectStore('ajax_requests').getAll().onsuccess = function (event) {
           $('#queue-table > tbody').html('')
           $.each(event.target.result.reverse(), function(index, value) {
-            $('#queue-table > tbody:last-child').append(`
+            $('#queue-table > tbody').append(`
                 <tr>
                   <td class="text-center">${value.id}</td>
                   <td>${value.url}</td>
