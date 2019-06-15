@@ -2,65 +2,63 @@
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class area extends CI_Controller {
-
-	function __construct(){
+class area extends CI_Controller
+{
+	function __construct()
+	{
 		parent::__construct();
+
 		$this->load->model('Areas');
 	}
 
-	public function index()					
+	public function index()
 	{
-		$data['list'] = $this->Areas->Listado_areas();
-		//$data['permission'] = $permission;
 		$this->load->view('header');
-		$this->load->view('area/view_', $data);
+		$this->load->view('area/view_');
 	}
 
-	public function Obtener_area(){
+    public function Listado_areas()
+    {
+        $output = json_encode($this->Areas->Listado_areas());
 
-		$id=$_POST['id_area'];
-		$result = $this->Areas->Obtener_areas($id);
-		echo json_encode($result);
+        return $this->output->set_content_type('application/json')->set_status_header(200)->set_output($output);
+    }
+
+	public function Obtener_area()
+	{
+		$output = json_encode($this->Areas->Obtener_areas($_POST['id_area']));
+
+		return $this->output->set_content_type('application/json')->set_status_header(200)->set_output($output);
 	}
 
-	public function Guardar_area(){
+	public function Guardar_area()
+	{
+	    $result = $this->Areas->Guardar_areas([
+			'descripcion' => $this->input->post('descripcion'),
+			'estado' => "AC",
+		]);
 
-	    $descripcion=$this->input->post('descripcion');	   
-	    // $data = array(
-			// 			    'descripcion' => $descripcion,
-			// 				'id_empresa' => $id_empresa,
-			// 				'estado' => "AC"
-			// );
-			$data = array(
-				'descripcion' => $descripcion,			
-				'estado' => "AC"
-			);
-	    $sql = $this->Areas->Guardar_areas($data);
-	    echo json_encode($sql);
-	   
+		$output = json_encode(['success' => $result]);
+
+		return $this->output->set_content_type('application/json')->set_status_header(201)->set_output($output);
   	}
-	//   	public function Modificar_area(){
 
-  // 		$id=$this->input->post('id_area');
-	//     $descripcion=$this->input->post('descripcion');
-	//     $id_empresa=$this->input->post('id_empresa');
-	//     $data = array(
-	//     	    		   	'id_area' => $id,
-	// 					    'descripcion' => $descripcion,
-	// 				   );
-	//     $sql = $this->Areas->Modificar_areas($data);
-	//     echo json_encode($sql);
+   	public function Modificar_area()
+   	{
+     	$result = $this->Areas->Modificar_areas([
+     		'id_area' => $this->input->post('id_area'),
+     		'descripcion' => $this->input->post('descripcion')
+     	]);
 
-	//   }
-	  
-	// public function Eliminar_area(){
-	
-	// 	$id=$_POST['id_area'];	
-	// 	$result = $this->Areas->Eliminar_areas($id);
-	// 	echo json_encode($result);
-		
-	// }
-}	
+		$output = json_encode(['success' => $result]);
 
-?>
+     	return $this->output->set_content_type('application/json')->set_status_header(201)->set_output($output);
+   }
+
+	public function Eliminar_area()
+	{
+		$output = json_encode(['success' => $this->Areas->Eliminar_areas($_POST['id_area'])]);
+
+		return $this->output->set_content_type('application/json')->set_status_header(200)->set_output($output);
+	}
+}

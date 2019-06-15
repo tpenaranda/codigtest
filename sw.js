@@ -1,125 +1,147 @@
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js');
 
-const CACHE_STATIC_NAME  = 'static-v6';
-const CACHE_DYNAMIC_NAME = 'dynamic-v1';
-const CACHE_INMUTABLE_NAME = 'inmutable-v1';
+var appDB;
+var postData;
+const IDB_VERSION = 1;
+const STORE_NAME = 'ajax_requests';
 
-const CACHE_DYNAMIC_LIMIT = 50;
+openDatabase();
 
+function openDatabase () {
+  var indexedDBOpenRequest = indexedDB.open('codigtest-ajax', IDB_VERSION);
 
-function limpiarCache( cacheName, numeroItems ) {
+  indexedDBOpenRequest.onerror = function (error) {
+    console.error('IndexedDB error:', error);
+  };
 
+  indexedDBOpenRequest.onupgradeneeded = function () {
+    this.result.createObjectStore(STORE_NAME, {
+        autoIncrement:  true,
+        keyPath: 'id'
+    });
+  };
 
-    caches.open( cacheName )
-        .then( cache => {
-
-            return cache.keys()
-                .then( keys => {
-                    
-                    if ( keys.length > numeroItems ) {
-                        cache.delete( keys[0] )
-                            .then( limpiarCache(cacheName, numeroItems) );
-                    }
-                });
-
-            
-        });
+  indexedDBOpenRequest.onsuccess = function () {
+    appDB = this.result;
+  }
 }
 
+self.addEventListener('message', function (event) {
+  if (event.data.hasOwnProperty('post_data')) {
+    postData = event.data.post_data
+  }
+})
 
+self.addEventListener('install', function(event) {
+  event.waitUntil(
+    caches.open('codigtest-cache').then(function(cache) {
+      return cache.addAll([
+        'index.php',
+        '/index.php/area/Listado_areas',
 
+        'static/css/bootstrap.min.css',
+        'static/css/jquery.dataTables.min.css',
+        'static/css/buttons.dataTables.min.css',
 
-self.addEventListener('install', e => {
+        'static/js/jquery-3.3.1.min.js',
+        'static/js/popper.min.js',
+        'static/js/bootstrap.min.js',
+        'static/js/jquery.dataTables.min.js',
+        'static/js/dataTables.buttons.min.js',
+        'static/js/buttons.print.min.js',
+        'static/js/all.js',
 
+        'static/images/sort_asc.png',
+        'static/images/sort_desc.png',
+        'static/images/sort_both.png',
 
-    const cacheProm = caches.open( CACHE_STATIC_NAME )
-        .then( cache => {
-
-            return cache.addAll([
-                '/',
-                '/index.html',
-                '/css/style.css',
-                '/img/main.jpg',
-                '/js/app.js',
-                '/img/no-img.jpg',
-                '/pages/offline.html'
-            ]);
-
-        
-        });
-
-    const cacheInmutable = caches.open( CACHE_INMUTABLE_NAME )
-            .then( cache => cache.add('https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'));
-
-
-    e.waitUntil( Promise.all([cacheProm, cacheInmutable]) );
-
+        'favicon.ico'
+      ]);
+    })
+  );
 });
 
+self.addEventListener('fetch', function(event) {
+  if (event.request.clone().method === 'POST') {
+    event.respondWith(fetch(event.request.clone()).catch(function (error) {
+      console.log('POST Saved to IndexedDB:', event.request.clone().url);
+      return storePostRequest(event.request.clone().url, postData);
+    }));
+  } else {
+    event.respondWith(
+      caches.match(event.request).then(function(response) {
+        if (response) {
+          console.log('GET Reply from Cache for URL:', event.request.clone().url);
+          return response;
+        }
 
-self.addEventListener('activate', e => {
-
-
-    const respuesta = caches.keys().then( keys => {
-
-        keys.forEach( key => {
-
-            // static-v4
-            if (  key !== CACHE_STATIC_NAME && key.includes('static') ) {
-                return caches.delete(key);
-            }
-
-        });
-
-    });
-
-
-
-    e.waitUntil( respuesta );
-
+        console.log('GET Reply from Network for URL:', event.request.clone().url);
+        return fetch(event.request.clone());
+        }
+      )
+    );
+  }
 });
 
-
-
-
-
-self.addEventListener('fetch', e => {
-
-
-    // 2- Cache with Network Fallback
-    const respuesta = caches.match( e.request )
-        .then( res => {
-
-            if ( res ) return res;
-
-            // No existe el archivo
-
-            return fetch( e.request ).then( newResp => {
-
-                caches.open( CACHE_DYNAMIC_NAME )
-                    .then( cache => {
-                        cache.put( e.request, newResp );
-                        limpiarCache( CACHE_DYNAMIC_NAME, 50 );
-                    });
-
-                return newResp.clone();
-            })
-            .catch( err => {
-
-                if ( e.request.headers.get('accept').includes('text/html') ) {
-                    return caches.match('/pages/offline.html');
-                }
-
-            
-            });
-
-
-        });
-
-
-
-
-    e.respondWith( respuesta );
-
-
-
+self.addEventListener('sync', function (event) {
+  if (event.tag === 'sendPostData') {
+    event.waitUntil(sendPostToServer())
+  }
 });
+
+function sendPostToServer() {
+  var savedRequests = []
+  var req = getObjectStore(STORE_NAME).openCursor()
+
+  req.onsuccess = async function (event) {
+    var cursor = event.target.result
+
+    if (cursor) {
+      savedRequests.push(cursor.value)
+      cursor.continue()
+    } else {
+     for (let savedRequest of savedRequests) {
+       var requestUrl = savedRequest.url
+       var payload = Object.keys(savedRequest.payload).map(key => key + '=' + savedRequest.payload[key]).join('&');
+       var method = savedRequest.method
+       var headers = {
+         'Accept': 'application/json',
+         'Content-Type': 'application/x-www-form-urlencoded',
+       }
+
+       fetch(requestUrl, {
+         headers: headers,
+         method: method,
+         body: payload
+       }).then(function (response) {
+         if (response.status < 400) {
+          getObjectStore(STORE_NAME, 'readwrite').delete(savedRequest.id);
+         }
+       }).catch(function (error) {
+         console.error('Send to Server failed:', error);
+         throw error;
+       })
+      }
+    }
+  }
+}
+
+function getObjectStore(storeName, mode) {
+  return appDB.transaction(storeName, mode).objectStore(storeName);
+}
+
+function storePostRequest(url, payload) {
+  var request = getObjectStore(STORE_NAME, 'readwrite').add({
+    url: url,
+    payload: payload,
+    method: 'POST'
+  });
+
+  request.onsuccess = function (event) {
+    console.log('POST Request added to IndexedDB');
+  }
+
+  request.onerror = function (error) {
+    console.log('Error when adding POST Request to IndexedDB');
+  }
+}

@@ -1,4 +1,5 @@
 <?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
 class areas extends CI_Model
 {
 	function __construct()
@@ -8,14 +9,14 @@ class areas extends CI_Model
 
 	function Listado_areas()
 	{
-		
-		$this->db->where('estado', 'AC');
-		
+
+		$this->db->where('estado', 'AC')->order_by('id_area', 'desc');
+
 		$query = $this->db->get('area');
 
 		if ($query->num_rows()!=0)
 		{
-			return $query->result_array();	
+			return $query->result_array();
 		}
 	}
 
@@ -23,42 +24,27 @@ class areas extends CI_Model
 
     $this->db->where('id_area', $id);
     $query=$this->db->get('area');
-   
+
     if ($query->num_rows()!=0)
-        {   
-            return $query->result_array();  
+        {
+            return $query->result_array();
         }
 	}
 
-	function Guardar_areas($data){
-
-		// $userdata = $this->session->userdata('user_data');
-		// $empId = $userdata[0]['id_empresa']; 
-		// $data['id_empresa'] = $empId;
-
-		$query = $this->db->insert("area",$data);
-		return $query;
-
+	function Guardar_areas($data)
+	{
+		return $this->db->insert("area", $data);
 	}
 
-	// function Modificar_areas($data){
+	function Modificar_areas($data)
+	{
+		return $this->db->update('area', $data, ['id_area' => $data['id_area']]);
+	}
 
-	// 	$userdata = $this->session->userdata('user_data');
-	// 	$empId = $userdata[0]['id_empresa']; 
-	// 	$data['id_empresa'] = $empId;
+	function Eliminar_areas($data)
+	{
+		$this->db->set('estado', 'AN')->where('id_area', $data);
 
-	// 	$query =$this->db->update('area', $data, array('id_area' => $data['id_area']));
-	// 	return $query;
-	// }
-
-	// function Eliminar_areas($data){
-
-	// 	$this->db->set('estado', 'AN');
-	// 	$this->db->where('id_area', $data);
-	// 	$query=$this->db->update('area');
-	// 	return $query;
-    	
-    // }
-}	
-
-?>
+		return $this->db->update('area');
+    }
+}

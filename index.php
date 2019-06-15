@@ -1,30 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<script>
-
-if(navigator.serviceWorker) {
-        navigator.serviceWorker.register('sw.js')
-        .then(function() {
-            return navigator.serviceWorker.ready
-		});
-}
-
-</script>
-<body>
-
-
-
-</body>
-</html>
-
-
 <?php
 
-
 /**
- * 
- * 
+ *
+ *
  * CodeIgniter
  *
  * An open source application development framework for PHP
