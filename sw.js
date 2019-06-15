@@ -2,7 +2,7 @@ importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox
 
 var appDB;
 var postData;
-const IDB_VERSION = 1;
+const IDB_VERSION = 2;
 const STORE_NAME = 'ajax_requests';
 
 openDatabase();
@@ -31,6 +31,10 @@ self.addEventListener('message', function (event) {
     postData = event.data.post_data
   }
 })
+
+workbox.precaching.precacheAndRoute([
+    { url: '/index.php', revision: 'abc123' },
+]);
 
 self.addEventListener('install', function(event) {
   event.waitUntil(
@@ -63,22 +67,24 @@ self.addEventListener('install', function(event) {
 
 self.addEventListener('fetch', function(event) {
   if (event.request.clone().method === 'POST') {
-    event.respondWith(fetch(event.request.clone()).catch(function (error) {
-      console.log('POST Saved to IndexedDB:', event.request.clone().url);
-      return storePostRequest(event.request.clone().url, postData);
-    }));
+    event.respondWith(
+      fetch(event.request.clone()).catch(function (error) {
+        console.log('POST Saved to IndexedDB:', event.request.clone().url);
+        return storePostRequest(event.request.clone().url, postData);
+      })
+    );
   } else {
     event.respondWith(
-      caches.match(event.request).then(function(response) {
-        if (response) {
-          console.log('GET Reply from Cache for URL:', event.request.clone().url);
+      fetch(event.request).then(function(response) {
           return response;
-        }
-
-        console.log('GET Reply from Network for URL:', event.request.clone().url);
-        return fetch(event.request.clone());
-        }
-      )
+      }).catch(function() {
+        caches.match(event.request).then(function(response) {
+          if (response) {
+            console.log('GET Reply from Cache for URL:', event.request.clone().url);
+            return response;
+          }
+        });
+      })
     );
   }
 });

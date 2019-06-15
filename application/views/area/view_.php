@@ -42,6 +42,7 @@
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2 px-5">
       <button class="btn btn-block btn-primary" onclick="enviarCola()">Enviar</button>
+      <button class="btn btn-block btn-primary" onclick="armarTablaCola()">Refrescar</button>
     </div>
     <div class="col"></div>
   </div>
@@ -173,8 +174,8 @@
 
       // Hack, no clue wtf I'm doing here.
       if (!navigator.serviceWorker.controller) {
-        console.log('Reloading app due to missing ServiceWorker controller.')
-        location.reload()
+        // console.log('Reloading app due to missing ServiceWorker controller.')
+        // location.reload()
       }
     });
   }
@@ -184,7 +185,6 @@
 
   function enviarCola() {
     navigator.serviceWorker.getRegistration().then((registration) => registration.sync.register('sendPostData'))
-    return armarTablaCola();
   }
 
   function armarTablaAreas() {
@@ -217,17 +217,19 @@
 
   function armarTablaCola() {
     indexedDB.open("codigtest-ajax").onsuccess = function (event) {
-      event.target.result.transaction('ajax_requests').objectStore('ajax_requests').getAll().onsuccess = function (event) {
-        $('#queue-table > tbody').html('')
-        $.each(event.target.result.reverse(), function(index, value) {
-          $('#queue-table > tbody:last-child').append(`
-              <tr>
-                <td class="text-center">${value.id}</td>
-                <td>${value.url}</td>
-                <td>${JSON.stringify(value.payload)}</td>
-              </tr>`);
-        });
-      };
+      if (event.target.result.objectStoreNames.contains('ajax_requests')) {
+        event.target.result.transaction('ajax_requests').objectStore('ajax_requests').getAll().onsuccess = function (event) {
+          $('#queue-table > tbody').html('')
+          $.each(event.target.result.reverse(), function(index, value) {
+            $('#queue-table > tbody:last-child').append(`
+                <tr>
+                  <td class="text-center">${value.id}</td>
+                  <td>${value.url}</td>
+                  <td>${JSON.stringify(value.payload)}</td>
+                </tr>`);
+          });
+        };
+      }
     };
   }
 
