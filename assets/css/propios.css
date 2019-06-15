@@ -1,0 +1,49 @@
+/* arregla inputs fecha en firefox */
+input[type="date"].form-control, 
+input[type="time"].form-control, 
+input[type="datetime-local"].form-control, 
+input[type="month"].form-control {
+    line-height: 1.42857143;
+}
+/* arregla inputs file en firefox */
+input[type="file"].form-control {
+    padding-bottom: 40px;
+    line-height: 1.42857143;
+}
+/* los textarea no pueden ser agrandados en ancho */
+textarea.form-control {
+    resize: none;
+    overflow-y: auto;
+}
+
+/* aumenta el ancho y color de la barra de scroll del menu */
+.slimScrollBar {
+    background: none repeat scroll 0 0 #3C8DBC !important;
+    opacity:1!important;
+    width: 8px!important;
+}
+
+
+/* hace scrolleable el listado del plugin autocomplete */
+.ui-autocomplete {
+    max-height: 100px;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+/* IE 6 doesn't support max-height
+* we use height instead, but this forces the menu to always be this tall
+*/
+* html .ui-autocomplete {
+    height: 100px;
+}
+
+
+/* clase auxiliar para lo que no queremos imprimir */
+@media print
+{    
+    .no-imprimir, .no-imprimir *
+    {
+        display: none !important;
+    }
+}
