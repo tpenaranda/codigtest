@@ -195,7 +195,7 @@
       dataType : "json",
       url: '/index.php/area/Listado_areas',
       success: function(results) {
-        $('tbody').removeClass('text-center').html('');
+        $('#areas-table > tbody').removeClass('text-center').html('');
         $.each(results, function(index, value) {
           $('#areas-table > tbody:last-child').append(`
               <tr>
@@ -247,7 +247,9 @@
 
     var postData = { "descripcion": descripcion,  "id_empresa": id_empresa };
 
-    navigator.serviceWorker.controller.postMessage({ post_data: postData })
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ post_data: postData })
+    }
 
     $.ajax({
       type: 'POST',

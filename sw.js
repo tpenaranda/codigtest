@@ -40,7 +40,6 @@ self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open('codigtest-cache').then(function(cache) {
       return cache.addAll([
-        'index.php',
         '/index.php/area/Listado_areas',
 
         'static/css/bootstrap.min.css',
