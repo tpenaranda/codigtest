@@ -1,30 +1,6 @@
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js');
 
-var appDB;
 var postData;
-const IDB_VERSION = 2;
-const STORE_NAME = 'ajax_requests';
-
-openDatabase();
-
-function openDatabase () {
-  var indexedDBOpenRequest = indexedDB.open('codigtest-ajax', IDB_VERSION);
-
-  indexedDBOpenRequest.onerror = function (error) {
-    console.error('IndexedDB error:', error);
-  };
-
-  indexedDBOpenRequest.onupgradeneeded = function () {
-    this.result.createObjectStore(STORE_NAME, {
-        autoIncrement:  true,
-        keyPath: 'id'
-    });
-  };
-
-  indexedDBOpenRequest.onsuccess = function () {
-    appDB = this.result;
-  }
-}
 
 self.addEventListener('message', function (event) {
   if (event.data.hasOwnProperty('post_data')) {
@@ -68,38 +44,43 @@ self.addEventListener('fetch', function(event) {
   if (event.request.clone().method === 'POST') {
     event.respondWith(
       fetch(event.request.clone()).catch(function (error) {
-        console.log('POST Saved to IndexedDB:', event.request.clone().url);
         return storePostRequest(event.request.clone().url, postData);
       })
     );
   } else {
     event.respondWith(
       fetch(event.request).then(function(response) {
-          return response;
+        let responseClone = response.clone();
+        caches.open('codigtest-cache').then(function (cache) {
+          cache.put(event.request, responseClone);
+        });
+
+        return response;
       }).catch(function() {
-        caches.match(event.request).then(function(response) {
+        return caches.match(event.request).then(function(response) {
           if (response) {
             console.log('GET Reply from Cache for URL:', event.request.clone().url);
             return response;
           }
+
+          return new Response('', {
+            headers: { 'Content-Type': 'text/html' }
+          });
         });
+
       })
     );
   }
 });
 
 function storePostRequest(url, payload) {
-  var request = appDB.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).add({
-    url: url,
-    payload: payload,
-    method: 'POST'
-  });
-
-  request.onsuccess = function (event) {
-    console.log('POST Request added to IndexedDB');
-  }
-
-  request.onerror = function (error) {
-    console.log('Error when adding POST Request to IndexedDB');
+  indexedDB.open('codigtest-ajax').onsuccess = function (event) {
+    event.target.result.transaction('ajax_requests', 'readwrite').objectStore('ajax_requests').add({
+      url: url,
+      payload: payload,
+      method: 'POST'
+    }).onsuccess = function (event) {
+      console.log('POST Request added to IndexedDB');
+    };
   }
 }

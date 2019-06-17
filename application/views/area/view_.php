@@ -21,6 +21,15 @@
     <div class="col"></div>
   </div>
   <hr>
+  <span id="sw-not-active" style="display: none;">
+    <div class="row">
+      <div class="col-12 text-center text-danger">
+        El servicio de contenido offline no se ha cargado!
+        <button class="btn btn-outline-info btn-sm ml-3" onclick="location.reload()">Recargar</button>
+      </div>
+    </div>
+    <hr>
+  </span>
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 pt-2 px-5 text-center">
@@ -145,69 +154,73 @@
   var id_;
   var revision = '<?= md5(time()) ?>';
   var requestsQueue = [];
+  var isServiceWorkerControllerActive = false;
 
   if (!indexedDB) {
       alert("Este browser no soporta IndexedDB, necesita otro para poder utilizar la aplicación.");
   }
 
+  indexedDB.open('codigtest-ajax').onupgradeneeded = function (event) {
+    event.target.result.createObjectStore('ajax_requests', {
+      autoIncrement:  true,
+      keyPath: 'id'
+    });
+  };
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(err => {
         console.log(`Service Worker registration failed: ${err}`);
+        $('#sw-not-active').show()
       });
-
-      // Hack, no clue wtf I'm doing here.
       if (!navigator.serviceWorker.controller) {
-        // console.log('Reloading app due to missing ServiceWorker controller.')
-        // location.reload()
+        $('#sw-not-active').show()
       }
     });
   }
 
-  armarTablaAreas()
-  armarTablaCola()
+  $('#areas-table').DataTable({
+    "paging": true,
+    "lengthChange": true,
+    "searching": true,
+    "ordering": true,
+    "info": true,
+    "autoWidth": true,
+    "language": {
+          "lengthMenu": "Ver _MENU_ filas por página",
+          "zeroRecords": "No hay registros",
+          "info": "Mostrando pagina _PAGE_ de _PAGES_",
+          "infoEmpty": "No hay registros disponibles",
+          "infoFiltered": "(filtrando de un total de _MAX_ registros)",
+          "sSearch": "Buscar:  ",
+          "oPaginate": {
+              "sNext": "Sig.",
+              "sPrevious": "Ant."
+            }
+    },
+    ajax: {
+        url: '/index.php/area/Listado_areas',
+        dataSrc: 'data',
+        cache: true
+    },
+    "columns": [{
+      "data":"id_area",
+      "title": "ID"
+    },{
+      "data": "descripcion",
+      "title": "Descripción",
+    },{
+      "data": null,
+      "title": "Acciones",
+      "render": function (data, type, full) {
+        return `
+          <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar" onclick="abrirModalEditar(${data.id_area})"></i>
+          <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" onclick="abrirModalEliminar(${data.id_area})"></i>`
+      }
+    }]
+  }).order(0, 'desc').draw();
 
-  function armarTablaAreas() {
-    $('#areas-table').DataTable({
-      "paging": true,
-      "lengthChange": true,
-      "searching": true,
-      "ordering": true,
-      "info": true,
-      "autoWidth": true,
-      "language": {
-            "lengthMenu": "Ver _MENU_ filas por página",
-            "zeroRecords": "No hay registros",
-            "info": "Mostrando pagina _PAGE_ de _PAGES_",
-            "infoEmpty": "No hay registros disponibles",
-            "infoFiltered": "(filtrando de un total de _MAX_ registros)",
-            "sSearch": "Buscar:  ",
-            "oPaginate": {
-                "sNext": "Sig.",
-                "sPrevious": "Ant."
-              }
-      },
-      ajax: {
-          url: '/index.php/area/Listado_areas',
-          dataSrc: 'data'
-      },
-      "columns": [{
-        "data":"id_area",
-        "title": "ID"
-      },{
-        "data": "descripcion",
-        "title": "Descripción",
-      },{
-        "data": null,
-        "title": "Acciones",
-        "render": function (data, type, full) {
-          return `
-            <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar" onclick="abrirModalEditar(${data.id_area})"></i>
-            <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" onclick="abrirModalEliminar(${data.id_area})"></i>`
-        }
-      }]
-    }).order(0, 'desc').draw();
-  }
+  armarTablaCola()
 
   function procesarCola() {
     indexedDB.open("codigtest-ajax").onsuccess = function (event) {
@@ -225,12 +238,12 @@
             }).then(function (response) {
               if (response.status < 400) {
                 event.target.result.transaction('ajax_requests', 'readwrite').objectStore('ajax_requests', 'readwrite').delete(item.id);
-                armarTablaCola()
               }
             }).catch(function (error) {
-             console.error('Send to Server failed:', error);
-             throw error;
-            })
+
+            }).finally(function () {
+              armarTablaCola();
+            });
           });
         };
       }
