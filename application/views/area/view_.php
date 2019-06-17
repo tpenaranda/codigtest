@@ -35,7 +35,7 @@
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2 px-5">
-      <button class="btn btn-block btn-primary" onclick="enviarCola()">Enviar</button>
+      <button class="btn btn-block btn-primary" onclick="procesarCola()">Enviar</button>
     </div>
     <div class="col"></div>
   </div>
@@ -167,10 +167,6 @@
   armarTablaAreas()
   armarTablaCola()
 
-  function enviarCola() {
-    navigator.serviceWorker.getRegistration().then((registration) => registration.sync.register('sendPostData'))
-  }
-
   function armarTablaAreas() {
     $('#areas-table').DataTable({
       "paging": true,
@@ -192,7 +188,7 @@
               }
       },
       ajax: {
-          url: 'area/Listado_areas',
+          url: '/index.php/area/Listado_areas',
           dataSrc: 'data'
       },
       "columns": [{
@@ -213,6 +209,34 @@
     }).order(0, 'desc').draw();
   }
 
+  function procesarCola() {
+    indexedDB.open("codigtest-ajax").onsuccess = function (event) {
+      if (event.target.result.objectStoreNames.contains('ajax_requests')) {
+        event.target.result.transaction('ajax_requests').objectStore('ajax_requests', 'readwrite').getAll().onsuccess = function (objectStoreEvent) {
+          $.each(objectStoreEvent.target.result, function (key, item) {
+            var headers = {
+             'Accept': 'application/json',
+             'Content-Type': 'application/x-www-form-urlencoded',
+            }
+            fetch(item.url, {
+              headers: headers,
+              method: item.method,
+              body: Object.keys(item.payload).map(key => key + '=' + item.payload[key]).join('&')
+            }).then(function (response) {
+              if (response.status < 400) {
+                event.target.result.transaction('ajax_requests', 'readwrite').objectStore('ajax_requests', 'readwrite').delete(item.id);
+                armarTablaCola()
+              }
+            }).catch(function (error) {
+             console.error('Send to Server failed:', error);
+             throw error;
+            })
+          });
+        };
+      }
+    };
+  }
+
   function armarTablaCola() {
     $('#armar-cola-icon-spin').show()
     $('#armar-cola-icon').hide()
@@ -224,9 +248,9 @@
 
     indexedDB.open("codigtest-ajax").onsuccess = function (event) {
       if (event.target.result.objectStoreNames.contains('ajax_requests')) {
-        event.target.result.transaction('ajax_requests').objectStore('ajax_requests').getAll().onsuccess = function (event) {
+        event.target.result.transaction('ajax_requests', 'readonly').objectStore('ajax_requests').getAll().onsuccess = function (event) {
           $('#queue-table').DataTable({
-            retrieve: true,
+            destroy: true,
             ordering: true,
             searching: false,
             paging: false,

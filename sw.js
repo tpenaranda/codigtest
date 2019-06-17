@@ -88,55 +88,8 @@ self.addEventListener('fetch', function(event) {
   }
 });
 
-self.addEventListener('sync', function (event) {
-  if (event.tag === 'sendPostData') {
-    event.waitUntil(sendPostToServer())
-  }
-});
-
-function sendPostToServer() {
-  var savedRequests = []
-  var req = getObjectStore(STORE_NAME).openCursor()
-
-  req.onsuccess = async function (event) {
-    var cursor = event.target.result
-
-    if (cursor) {
-      savedRequests.push(cursor.value)
-      cursor.continue()
-    } else {
-     for (let savedRequest of savedRequests) {
-       var requestUrl = savedRequest.url
-       var payload = Object.keys(savedRequest.payload).map(key => key + '=' + savedRequest.payload[key]).join('&');
-       var method = savedRequest.method
-       var headers = {
-         'Accept': 'application/json',
-         'Content-Type': 'application/x-www-form-urlencoded',
-       }
-
-       fetch(requestUrl, {
-         headers: headers,
-         method: method,
-         body: payload
-       }).then(function (response) {
-         if (response.status < 400) {
-          getObjectStore(STORE_NAME, 'readwrite').delete(savedRequest.id);
-         }
-       }).catch(function (error) {
-         console.error('Send to Server failed:', error);
-         throw error;
-       })
-      }
-    }
-  }
-}
-
-function getObjectStore(storeName, mode) {
-  return appDB.transaction(storeName, mode).objectStore(storeName);
-}
-
 function storePostRequest(url, payload) {
-  var request = getObjectStore(STORE_NAME, 'readwrite').add({
+  var request = appDB.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).add({
     url: url,
     payload: payload,
     method: 'POST'
