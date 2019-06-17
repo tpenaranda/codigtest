@@ -24,7 +24,10 @@
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 pt-2 px-5 text-center">
-      <p class="font-weight-normal my-1" style="font-size: 1.6rem;">Cola POST</p>
+      <p class="font-weight-normal my-1" style="font-size: 1.6rem;" onclick="armarTablaCola()">Cola POST
+        <i style="display: none;" class="fas fa-sync" id="armar-cola-icon"></i>
+        <i style="display: none;" class="fas fa-sync fa-spin" id="armar-cola-icon-spin"></i>
+      </p>
     </div>
     <div class="col"></div>
   </div>
@@ -33,7 +36,6 @@
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2 px-5">
       <button class="btn btn-block btn-primary" onclick="enviarCola()">Enviar</button>
-      <button class="btn btn-block btn-primary" onclick="armarTablaCola()">Refrescar</button>
     </div>
     <div class="col"></div>
   </div>
@@ -41,16 +43,7 @@
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2">
-      <table id="queue-table" class="table table-responsive-xs">
-        <thead>
-          <tr>
-            <th scope="col" class="text-center">ID</th>
-            <th scope="col" class="text-center">URL</th>
-            <th scope="col" class="text-center">Payload</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <table id="queue-table" class="table table-responsive-xs"></table>
     </div>
     <div class="col"></div>
   </div>
@@ -217,22 +210,43 @@
             <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" onclick="abrirModalEliminar(${data.id_area})"></i>`
         }
       }]
-    }).order(0, 'desc');
+    }).order(0, 'desc').draw();
   }
 
   function armarTablaCola() {
+    $('#armar-cola-icon-spin').show()
+    $('#armar-cola-icon').hide()
+
+    setTimeout(() => {
+      $('#armar-cola-icon-spin').hide()
+      $('#armar-cola-icon').show()
+    }, 750)
+
     indexedDB.open("codigtest-ajax").onsuccess = function (event) {
       if (event.target.result.objectStoreNames.contains('ajax_requests')) {
         event.target.result.transaction('ajax_requests').objectStore('ajax_requests').getAll().onsuccess = function (event) {
-          $('#queue-table > tbody').html('')
-          $.each(event.target.result.reverse(), function(index, value) {
-            $('#queue-table > tbody').append(`
-                <tr>
-                  <td class="text-center">${value.id}</td>
-                  <td>${value.url}</td>
-                  <td>${JSON.stringify(value.payload)}</td>
-                </tr>`);
-          });
+          $('#queue-table').DataTable({
+            retrieve: true,
+            ordering: true,
+            searching: false,
+            paging: false,
+            info: false,
+            data: event.target.result,
+            "columns": [{
+              "data":"id",
+              "title": "ID"
+            },{
+              "data": "url",
+              "title": "URL",
+            }
+            ,{
+              "data": "payload",
+              "title": "Payload",
+              "render": function (data, type, full) {
+                return JSON.stringify(data)
+              }
+            }]
+          }).order(0, 'desc').draw();
         };
       }
     };
