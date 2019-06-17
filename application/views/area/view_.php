@@ -9,16 +9,7 @@
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2">
-      <table id="areas-table" class="table table-striped table-bordered table-hover table-responsive-xs">
-        <thead>
-          <tr>
-            <th scope="col" class="text-center">Acciones</th>
-            <th scope="col" class="text-center">ID</th>
-            <th scope="col">Descripción</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <table id="areas-table" class="table table-striped table-bordered table-hover table-responsive-xs"></table>
     </div>
     <div class="col"></div>
   </div>
@@ -188,29 +179,45 @@
   }
 
   function armarTablaAreas() {
-    $('#areas-table > tbody').addClass('text-center').html('<tr><td colspan="3"><span class="spinner-border text-primary"></span></td></tr>');
-
-    $.ajax({
-      type: 'GET',
-      dataType: 'json',
-      url: '/index.php/area/Listado_areas',
-    }).done((results) => {
-      $('#areas-table > tbody').removeClass('text-center').html('');
-      $.each(results, function(index, value) {
-        $('#areas-table > tbody').append(`
-            <tr>
-              <td class="text-center">
-                <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar"></i>
-                <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" ></i>
-              </td>
-              <td class="text-center">${value.id_area}</td>
-              <td class="text-capitalize">${value.descripcion}</td>
-            </tr>`);
-      });
-      //makeDataTable();
-    }).fail(() => {
-      $('tbody').html('<tr><td colspan="3">Error cargando áreas!</td></tr>');
-    });
+    $('#areas-table').DataTable({
+      "paging": true,
+      "lengthChange": true,
+      "searching": true,
+      "ordering": true,
+      "info": true,
+      "autoWidth": true,
+      "language": {
+            "lengthMenu": "Ver _MENU_ filas por página",
+            "zeroRecords": "No hay registros",
+            "info": "Mostrando pagina _PAGE_ de _PAGES_",
+            "infoEmpty": "No hay registros disponibles",
+            "infoFiltered": "(filtrando de un total de _MAX_ registros)",
+            "sSearch": "Buscar:  ",
+            "oPaginate": {
+                "sNext": "Sig.",
+                "sPrevious": "Ant."
+              }
+      },
+      ajax: {
+          url: 'area/Listado_areas',
+          dataSrc: 'data'
+      },
+      "columns": [{
+        "data":"id_area",
+        "title": "ID"
+      },{
+        "data": "descripcion",
+        "title": "Descripción",
+      },{
+        "data": null,
+        "title": "Acciones",
+        "render": function (data, type, full) {
+          return `
+            <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar" onclick="abrirModalEditar(${data.id_area})"></i>
+            <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" onclick="abrirModalEliminar(${data.id_area})"></i>`
+        }
+      }]
+    }).order(0, 'desc');
   }
 
   function armarTablaCola() {
@@ -255,7 +262,7 @@
       dataType: 'json',
       url: '/index.php/area/Guardar_area'
     }).done((result) => {
-      armarTablaAreas()
+      $('#areas-table').DataTable().ajax.reload()
     }).fail((result) => {
       armarTablaCola()
     }).always(() => {
@@ -282,7 +289,7 @@
       dataType: 'json',
       url: '/index.php/area/Modificar_area',
     }).done((result) => {
-      armarTablaAreas()
+      $('#areas-table').DataTable().ajax.reload()
     }).fail((result) => {
       armarTablaCola()
     }).always(() => {
@@ -298,7 +305,7 @@
       dataType: 'json',
       url: '/index.php/area/Eliminar_area',
     }).done((result) => {
-      armarTablaAreas()
+      $('#areas-table').DataTable().ajax.reload()
     }).fail((result) => {
       armarTablaCola()
     }).always(() => {
@@ -306,42 +313,9 @@
     });
   }
 
-  function makeDataTable() {
-    $('#areas-table').DataTable().destroy()
+  function abrirModalEliminar(id_area) {
+    id_ = id_area
 
-    $('.fa-pencil-alt').click(function () {
-        id_ = $(this).parents('tr').find('td').eq(1).html();
-
-        $('#descripcionEA').val($(this).parents('tr').find('td').eq(2).html());
-
-        $('#modalEditar').modal('show');
-    });
-
-    $('.fa-times-circle').click(function () {
-      id_ = $(this).parents('tr').find('td').eq(1).html();
-
-      $('#modalEliminar').modal('show');
-    });
-
-    $('#areas-table').DataTable({
-        "paging": true,
-        "lengthChange": true,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": true,
-        "language": {
-              "lengthMenu": "Ver _MENU_ filas por página",
-              "zeroRecords": "No hay registros",
-              "info": "Mostrando pagina _PAGE_ de _PAGES_",
-              "infoEmpty": "No hay registros disponibles",
-              "infoFiltered": "(filtrando de un total de _MAX_ registros)",
-              "sSearch": "Buscar:  ",
-              "oPaginate": {
-                  "sNext": "Sig.",
-                  "sPrevious": "Ant."
-                }
-        }
-    });
-  }
+    return $('#modalEliminar').modal('show');
+  };
 </script>

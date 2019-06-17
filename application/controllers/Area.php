@@ -19,7 +19,9 @@ class area extends CI_Controller
 
     public function Listado_areas()
     {
-        $output = json_encode($this->Areas->Listado_areas());
+        $output = json_encode([
+            'data' => $this->Areas->Listado_areas(), // array_slice($this->Areas->Listado_areas(), $this->input->get('iDisplayStart'), $this->input->get('iDisplayLength')),
+        ]);
 
         return $this->output->set_content_type('application/json')->set_status_header(200)->set_output($output);
     }
