@@ -152,9 +152,6 @@
 
 <script>
   var id_;
-  var revision = '<?= md5(time()) ?>';
-  var requestsQueue = [];
-  var isServiceWorkerControllerActive = false;
 
   if (!indexedDB) {
       alert("Este browser no soporta IndexedDB, necesita otro para poder utilizar la aplicación.");
@@ -337,7 +334,7 @@
   }
 
   function abrirModalEditar(id_area, descripcion) {
-    id_ = id_area
+    id_ = id_area;
 
     $('#descripcionEA').val(descripcion);
 
@@ -345,7 +342,7 @@
   };
 
   function abrirModalEliminar(id_area) {
-    id_ = id_area
+    id_ = id_area;
 
     return $('#modalEliminar').modal('show');
   };

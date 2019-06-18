@@ -75,7 +75,7 @@ self.addEventListener('message', function (event) {
   } else {
     messageData = event.data
   }
-})
+});
 
 function processQueue() {
   indexedDB.open('codigtest-ajax').onsuccess = function (event) {
