@@ -10,7 +10,8 @@ self.addEventListener('fetch', function(event) {
   if (event.request.clone().method === 'POST') {
     event.respondWith(
       fetch(event.request.clone()).catch(function (error) {
-        return storePostRequest(event.request.clone().url, messageData);
+        storePostRequest(event.request.clone().url, messageData);
+        return new Response();
       })
     );
   } else {
