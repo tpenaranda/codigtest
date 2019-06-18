@@ -16,7 +16,7 @@
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2 px-5">
-      <button class="btn btn-block btn-primary" data-toggle="modal" data-target="#modalAgregar" title="Nueva">Agregar</button>
+      <button class="btn btn-block btn-primary" data-toggle="modal" data-target="#modalAgregar">Agregar</button>
     </div>
     <div class="col"></div>
   </div>
@@ -279,15 +279,9 @@
 
     $('.save-button').html('<span class="spinner-border text-primary" aria-hidden="true"></span>').addClass('disabled');
 
-    var postData = { descripcion: descripcion,  id_empresa: id_empresa };
-
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(postData)
-    }
-
-    $.ajax({
+    ajax({
       type: 'POST',
-      data: postData,
+      data: { descripcion: descripcion,  id_empresa: id_empresa },
       dataType: 'json',
       url: '/index.php/area/Guardar_area'
     }).done((result) => {
@@ -312,15 +306,9 @@
 
     $('.save-button').html('<span class="spinner-border text-primary" aria-hidden="true"></span>').addClass('disabled');
 
-    var postData = { id_area : id_,  descripcion: descripcion,  id_empresa: id_empresa };
-
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(postData)
-    }
-
-    $.ajax({
+    ajax({
       type: 'POST',
-      data: postData,
+      data: { id_area : id_,  descripcion: descripcion,  id_empresa: id_empresa },
       dataType: 'json',
       url: '/index.php/area/Modificar_area',
     }).done((result) => {
@@ -334,7 +322,7 @@
   }
 
   function eliminarArea() {
-    $.ajax({
+    ajax({
       type: 'POST',
       data: { id_area: id_ },
       dataType: 'json',
@@ -361,4 +349,12 @@
 
     return $('#modalEliminar').modal('show');
   };
+
+  function ajax(options) {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(options.data)
+    }
+
+    return $.ajax(options);
+  }
 </script>
