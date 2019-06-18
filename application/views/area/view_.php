@@ -16,7 +16,7 @@
   <div class="row">
     <div class="col"></div>
     <div class="col-12 col-md-6 py-2 px-5">
-      <button class="btn btn-block btn-primary" data-toggle="modal" data-target="#modalAgregar" id="btnAdd" title="Nueva">Agregar</button>
+      <button class="btn btn-block btn-primary" data-toggle="modal" data-target="#modalAgregar" title="Nueva">Agregar</button>
     </div>
     <div class="col"></div>
   </div>
@@ -137,7 +137,7 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body" id="cuerpoModalEditar">
+      <div class="modal-body">
        <h5>¿Desea eliminar el registro?</h5>
       </div>
       <div class="modal-footer">
@@ -214,7 +214,7 @@
       "title": "Acciones",
       "render": function (data, type, full) {
         return `
-          <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar" onclick="abrirModalEditar(${data.id_area})"></i>
+          <i class="fas fa-pencil-alt text-primary" style="cursor: pointer; margin-left: 15px;" title="Editar" onclick="abrirModalEditar('${data.id_area}', '${data.descripcion}')"></i>
           <i class="fas fa-times-circle text-danger" title="Eliminar" style="cursor: pointer; margin-left: 15px;" onclick="abrirModalEliminar(${data.id_area})"></i>`
       }
     }]
@@ -223,31 +223,9 @@
   armarTablaCola()
 
   function procesarCola() {
-    indexedDB.open("codigtest-ajax").onsuccess = function (event) {
-      if (event.target.result.objectStoreNames.contains('ajax_requests')) {
-        event.target.result.transaction('ajax_requests').objectStore('ajax_requests', 'readwrite').getAll().onsuccess = function (objectStoreEvent) {
-          $.each(objectStoreEvent.target.result, function (key, item) {
-            var headers = {
-             'Accept': 'application/json',
-             'Content-Type': 'application/x-www-form-urlencoded',
-            }
-            fetch(item.url, {
-              headers: headers,
-              method: item.method,
-              body: Object.keys(item.payload).map(key => key + '=' + item.payload[key]).join('&')
-            }).then(function (response) {
-              if (response.status < 400) {
-                event.target.result.transaction('ajax_requests', 'readwrite').objectStore('ajax_requests', 'readwrite').delete(item.id);
-              }
-            }).catch(function (error) {
-
-            }).finally(function () {
-              armarTablaCola();
-            });
-          });
-        };
-      }
-    };
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage('processQueue')
+    }
   }
 
   function armarTablaCola() {
@@ -301,10 +279,10 @@
 
     $('.save-button').html('<span class="spinner-border text-primary" aria-hidden="true"></span>').addClass('disabled');
 
-    var postData = { "descripcion": descripcion,  "id_empresa": id_empresa };
+    var postData = { descripcion: descripcion,  id_empresa: id_empresa };
 
     if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ post_data: postData })
+      navigator.serviceWorker.controller.postMessage(postData)
     }
 
     $.ajax({
@@ -334,9 +312,15 @@
 
     $('.save-button').html('<span class="spinner-border text-primary" aria-hidden="true"></span>').addClass('disabled');
 
+    var postData = { id_area : id_,  descripcion: descripcion,  id_empresa: id_empresa };
+
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(postData)
+    }
+
     $.ajax({
       type: 'POST',
-      data: { "id_area" : id_,  "descripcion": descripcion,  "id_empresa": id_empresa },
+      data: postData,
       dataType: 'json',
       url: '/index.php/area/Modificar_area',
     }).done((result) => {
@@ -363,6 +347,14 @@
       $('#modalEliminar').modal('hide')
     });
   }
+
+  function abrirModalEditar(id_area, descripcion) {
+    id_ = id_area
+
+    $('#descripcionEA').val(descripcion);
+
+    return $('#modalEditar').modal('show');
+  };
 
   function abrirModalEliminar(id_area) {
     id_ = id_area
